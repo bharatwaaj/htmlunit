@@ -354,7 +354,7 @@ public class CssStyleSheet implements Serializable {
      * @return {@code true} if it does apply, {@code false} if it doesn't apply
      */
     public static boolean selects(final BrowserVersion browserVersion, final Selector selector,
-            final DomElement element, final String pseudoElement, final boolean fromQuerySelectorAll) {
+                                  final DomElement element, final String pseudoElement, final boolean fromQuerySelectorAll) {
         switch (selector.getSelectorType()) {
             case ELEMENT_NODE_SELECTOR:
                 final ElementSelector es = (ElementSelector) selector;
@@ -394,8 +394,8 @@ public class CssStyleSheet implements Serializable {
                 }
                 final ChildSelector cs = (ChildSelector) selector;
                 return selects(browserVersion, cs.getSimpleSelector(), element, pseudoElement, fromQuerySelectorAll)
-                    && selects(browserVersion, cs.getAncestorSelector(), (DomElement) parentNode,
-                            pseudoElement, fromQuerySelectorAll);
+                        && selects(browserVersion, cs.getAncestorSelector(), (DomElement) parentNode,
+                        pseudoElement, fromQuerySelectorAll);
 
             case DESCENDANT_SELECTOR:
                 final DescendantSelector ds = (DescendantSelector) selector;
@@ -425,7 +425,7 @@ public class CssStyleSheet implements Serializable {
                     }
                     return prev != null
                             && selects(browserVersion, das.getSelector(),
-                                    (DomElement) prev, pseudoElement, fromQuerySelectorAll);
+                            (DomElement) prev, pseudoElement, fromQuerySelectorAll);
                 }
                 return false;
 
@@ -433,10 +433,10 @@ public class CssStyleSheet implements Serializable {
                 final GeneralAdjacentSelector gas = (GeneralAdjacentSelector) selector;
                 if (selects(browserVersion, gas.getSimpleSelector(), element, pseudoElement, fromQuerySelectorAll)) {
                     for (DomNode prev1 = element.getPreviousSibling(); prev1 != null;
-                                                        prev1 = prev1.getPreviousSibling()) {
+                         prev1 = prev1.getPreviousSibling()) {
                         if (prev1 instanceof DomElement
-                            && selects(browserVersion, gas.getSelector(), (DomElement) prev1,
-                                    pseudoElement, fromQuerySelectorAll)) {
+                                && selects(browserVersion, gas.getSelector(), (DomElement) prev1,
+                                pseudoElement, fromQuerySelectorAll)) {
                             return true;
                         }
                     }
@@ -469,8 +469,8 @@ public class CssStyleSheet implements Serializable {
      */
     // TODO make (package) private again
     public static boolean selects(final BrowserVersion browserVersion,
-            final Condition condition, final DomElement element,
-            final boolean fromQuerySelectorAll) {
+                                  final Condition condition, final DomElement element,
+                                  final boolean fromQuerySelectorAll) {
 
         switch (condition.getConditionType()) {
             case ID_CONDITION:
@@ -528,7 +528,7 @@ public class CssStyleSheet implements Serializable {
                     if (ATTRIBUTE_NOT_DEFINED != nodeLang) {
                         // "en", "en-GB" should be matched by "en" but not "english"
                         return nodeLang.startsWith(lcLang)
-                            && (nodeLang.length() == lcLangLength || '-' == nodeLang.charAt(lcLangLength));
+                                && (nodeLang.length() == lcLangLength || '-' == nodeLang.charAt(lcLangLength));
                     }
                 }
                 return false;
@@ -630,7 +630,7 @@ public class CssStyleSheet implements Serializable {
     }
 
     private static boolean selectsPseudoClass(final BrowserVersion browserVersion,
-            final Condition condition, final DomElement element, final boolean fromQuerySelectorAll) {
+                                              final Condition condition, final DomElement element, final boolean fromQuerySelectorAll) {
         if (browserVersion.hasFeature(QUERYSELECTORALL_NOT_IN_QUIRKS)) {
             final Object sobj = element.getPage().getScriptableObject();
             if (sobj instanceof HTMLDocument && ((HTMLDocument) sobj).getDocumentMode() < 8) {
@@ -660,7 +660,7 @@ public class CssStyleSheet implements Serializable {
             case "checked":
                 return (element instanceof HtmlCheckBoxInput && ((HtmlCheckBoxInput) element).isChecked())
                         || (element instanceof HtmlRadioButtonInput && ((HtmlRadioButtonInput) element).isChecked()
-                                || (element instanceof HtmlOption && ((HtmlOption) element).isSelected()));
+                        || (element instanceof HtmlOption && ((HtmlOption) element).isSelected()));
 
             case "required":
                 return element instanceof HtmlElement && ((HtmlElement) element).isRequired();
@@ -1007,7 +1007,7 @@ public class CssStyleSheet implements Serializable {
      * @throws CSSException if a selector is invalid
      */
     public static void validateSelectors(final SelectorList selectorList, final int documentMode,
-                final DomNode domNode) throws CSSException {
+                                         final DomNode domNode) throws CSSException {
         for (final Selector selector : selectorList) {
             if (!isValidSelector(selector, documentMode, domNode)) {
                 throw new CSSException("Invalid selector: " + selector);
@@ -1049,20 +1049,15 @@ public class CssStyleSheet implements Serializable {
             default:
                 if (LOG.isWarnEnabled()) {
                     LOG.warn("Unhandled CSS selector type '"
-                                + selector.getSelectorType() + "'. Accepting it silently.");
+                            + selector.getSelectorType() + "'. Accepting it silently.");
                 }
                 return true; // at least in a first time to break less stuff
         }
     }
 
-    /**
-     * Condition Factory
-     * Refactoring isValidCondition using Strategy Design Pattern to choose the best algorithm depending on the case,
-     * and implementing factory class to create objects of the newly created classes for Polymorphism.
-     */
     public static class ConditionFactory {
-        private static final Map<Condition.ConditionType, ConditionStrategy> strategies = new HashMap<>();
-        private final ConditionStrategy DEFAULT_STRATEGY = new NonPseudoClassCondition();
+        private static final Map<Condition.ConditionType, ConditionPlanner> plans = new HashMap<>();
+        private final ConditionPlanner DEFAULT_PLAN = new NonPseudoClassCondition();
         private int documentMode;
         private Condition condition;
         private DomNode domNode;
@@ -1073,39 +1068,39 @@ public class CssStyleSheet implements Serializable {
             this.condition = condition;
             this.documentMode = documentMode;
 
-            strategies.put(Condition.ConditionType.ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.ID_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.LANG_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.ONE_OF_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.BEGIN_HYPHEN_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.CLASS_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.PREFIX_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.SUBSTRING_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.SUFFIX_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
-            strategies.put(Condition.ConditionType.PSEUDO_CLASS_CONDITION, new PseudoClassCondition());
+            plans.put(Condition.ConditionType.ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.ID_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.LANG_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.ONE_OF_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.BEGIN_HYPHEN_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.CLASS_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.PREFIX_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.SUBSTRING_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.SUFFIX_ATTRIBUTE_CONDITION, new NonPseudoClassCondition());
+            plans.put(Condition.ConditionType.PSEUDO_CLASS_CONDITION, new PseudoClassCondition());
         }
 
-        public boolean getConditionStrategy() {
+        public boolean serve() {
             Condition.ConditionType conditionType = this.condition.getConditionType();
-            if (!strategies.containsKey(conditionType)) {
-                return DEFAULT_STRATEGY.getConditionValue(condition, documentMode, domNode);
+            if (!plans.containsKey(conditionType)) {
+                return DEFAULT_PLAN.getConditionValue(condition, documentMode, domNode);
             }
-            return strategies.get(conditionType).getConditionValue(condition, documentMode, domNode);
+            return plans.get(conditionType).getConditionValue(condition, documentMode, domNode);
         }
     }
 
-    interface ConditionStrategy {
+    interface ConditionPlanner {
         public boolean getConditionValue(final Condition condition, final int documentMode, final DomNode domNode);
     }
 
-    public static class NonPseudoClassCondition implements ConditionStrategy {
+    public static class NonPseudoClassCondition implements ConditionPlanner {
         @Override
         public boolean getConditionValue(final Condition condition, final int documentMode, final DomNode domNode) {
             return true;
         }
     }
 
-    public static class PseudoClassCondition implements ConditionStrategy {
+    public static class PseudoClassCondition implements ConditionPlanner {
         @Override
         public boolean getConditionValue(final Condition condition, final int documentMode, final DomNode domNode) {
             String value = condition.getValue();
@@ -1150,6 +1145,6 @@ public class CssStyleSheet implements Serializable {
      */
     private static boolean isValidCondition(final Condition condition, final int documentMode, final DomNode domNode) {
         ConditionFactory conditionFactory = new ConditionFactory(condition, documentMode, domNode);
-        return conditionFactory.getConditionStrategy();
+        return conditionFactory.serve();
     }
 }
